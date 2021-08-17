@@ -198,7 +198,7 @@ private:
 };
 
 #ifndef MDNS_LOGGING
-#undef ChipLogProgress
+#undef MdnsLogProgress
 #endif
 
 } // namespace Mdns
