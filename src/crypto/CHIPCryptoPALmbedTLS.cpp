@@ -1244,5 +1244,15 @@ exit:
     return error;
 }
 
+CHIP_ERROR ExtractAKIDFromX509Cert(const ByteSpan & certificate, MutableByteSpan & akid)
+{
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+}
+
+CHIP_ERROR ExtractVIDFromX509Cert(const ByteSpan & certificate, uint16_t & vid)
+{
+    return CHIP_ERROR_NOT_IMPLEMENTED;
+}
+
 } // namespace Crypto
 } // namespace chip
