@@ -99,8 +99,9 @@ private:
     ResolverDelegate * mResolverDelegate = nullptr;
 
     static DiscoveryImplPlatform sManager;
+
 #if CHIP_CONFIG_MDNS_CACHE_SIZE > 0
-    static MdnsCache <CHIP_CONFIG_MDNS_CACHE_SIZE> sIPCache;
+    static MdnsCache <CHIP_CONFIG_MDNS_CACHE_SIZE> sMdnsCache;
 #endif
 };
 
