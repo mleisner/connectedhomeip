@@ -36,7 +36,9 @@ namespace chip {
 namespace Mdns {
 
 DiscoveryImplPlatform DiscoveryImplPlatform::sManager;
+#if CHIP_CONFIG_MDNS_CACHE_SIZE > 0
 MdnsCache<CHIP_CONFIG_MDNS_CACHE_SIZE> DiscoveryImplPlatform::sMdnsCache;
+#endif
 
 DiscoveryImplPlatform::DiscoveryImplPlatform() = default;
 
@@ -439,7 +441,7 @@ CHIP_ERROR DiscoveryImplPlatform::ResolveNodeId(const PeerId & peerId, Inet::IPA
 {
     ReturnErrorOnFailure(Init());
 
-    Inet::IPaAddress addr;
+    Inet::IPAddress addr;
     uint16_t port;
     Inet::InterfaceId iface;
 
