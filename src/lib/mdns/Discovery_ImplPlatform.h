@@ -18,6 +18,7 @@
 #pragma once
 
 #include <core/CHIPError.h>
+#include <core/CHIPConfig.h>
 #include <inet/InetInterface.h>
 #include <lib/mdns/Advertiser.h>
 #include <lib/mdns/Resolver.h>
