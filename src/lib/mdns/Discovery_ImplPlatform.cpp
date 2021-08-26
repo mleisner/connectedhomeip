@@ -441,13 +441,13 @@ CHIP_ERROR DiscoveryImplPlatform::ResolveNodeId(const PeerId & peerId, Inet::IPA
 {
     ReturnErrorOnFailure(Init());
 
+#if CHIP_CONFIG_MDNS_CACHE_SIZE > 0
     Inet::IPAddress addr;
     uint16_t port;
     Inet::InterfaceId iface;
 
     /* see if the entry is cached and use it.... */
 
-#if CHIP_CONFIG_MDNS_CACHE_SIZE > 0
     if (sMdnsCache.Lookup(peerId, addr, port, iface) == CHIP_NO_ERROR)
     {
         ResolvedNodeData nodeData;
