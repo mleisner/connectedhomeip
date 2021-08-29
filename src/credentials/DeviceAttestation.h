@@ -24,17 +24,45 @@
 namespace chip {
 namespace Credentials {
 
-class DeviceAttestation 
+class DeviceAttestation
 {
 public:
-	CHIP_ERROR DeconstructAttestationElements(const ByteSpan & attestationElements, ByteSpan & certificationDeclaration,
+    /**
+     *  @brief Take the attestation elements vector and return each component seperately.
+     *
+     *  @param[in]  attestionElements Buffer containg source of attestion 
+     *  @param[out] certificationDeclaration
+     *  @param[out] attestationNonce
+     *  @param[out] timestamp
+     *  @param[out] firmwareInfo
+     *  @param[out] vendorReserved elements
+     *  @param[out] vendorId (from vendor reserved elements)
+     *  @param[out] profileNum (from vendor reserved elements)
+     */
+    static CHIP_ERROR DeconstructAttestationElements(const ByteSpan & attestationElements, ByteSpan & certificationDeclaration,
                                           ByteSpan & attestationNonce, uint32_t & timestamp, ByteSpan & firmwareInfo,
-					  std::vector<ByteSpan> &vendorReserved, uint16_t & vendorId, uint16_t profileNum );
+                     // std::vector<ByteSpan> &vendorReserved, uint16_t & vendorId, uint16_t & profileNum );
+                     uint16_t & vendorId, uint16_t & profileNum );
+                      
 
-	CHIP_ERROR ConstructAttestationElements(const ByteSpan & certificationDeclaration, const ByteSpan & attestationNonce,
+    /**
+     *  @brief Take discrete components  .
+     *
+     *  @param[in]  attestionElements Buffer containg source of attestion 
+     *  @param[out] certificationDeclaration
+     *  @param[out] attestationNonce
+     *  @param[out] timestamp
+     *  @param[out] firmwareInfo
+     *  @param[out] vendorReserved elements
+     *  @param[out] vendorId (from vendor reserved elements)
+     *  @param[out] profileNum (from vendor reserved elements)
+     */
+
+    static CHIP_ERROR ConstructAttestationElements(const ByteSpan & certificationDeclaration, const ByteSpan & attestationNonce,
                                         uint32_t timestamp, const ByteSpan & firmwareInfo, 
-					std::vector<ByteSpan> &vendorReserved, uint16_t vendorId, uint16_t profileNum,
-					MutableByteSpan & attestationElements);
+     //               std::vector<ByteSpan> &vendorReserved, uint16_t vendorId, uint16_t profileNum,
+            uint16_t vendorId, uint16_t profileNum,
+                    MutableByteSpan & attestationElements);
 };
 
 } // namespace Credentials
