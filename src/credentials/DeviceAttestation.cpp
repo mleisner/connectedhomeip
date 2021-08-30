@@ -19,7 +19,7 @@ enum {  CERTIFICATE_DECLARATION = 1,
 CHIP_ERROR DeviceAttestation::DeconstructAttestationElements(const ByteSpan & attestationElements, 
                                             ByteSpan & certificationDeclaration,
                                             ByteSpan & attestationNonce, uint32_t & timestamp, ByteSpan & firmwareInfo,
-//                                            std::vector<ByteSpan> & vendorReserved,
+                                            std::vector<ByteSpan> & vendorReserved,
                                           uint16_t & vendorId, uint16_t & profileNum)
 {
 #if 0
@@ -103,7 +103,7 @@ CHIP_ERROR DeviceAttestation::DeconstructAttestationElements(const ByteSpan & at
 
 CHIP_ERROR DeviceAttestation::ConstructAttestationElements(const ByteSpan & certificationDeclaration, const ByteSpan & attestationNonce,
                                         uint32_t timestamp, const ByteSpan & firmwareInfo, 
-//                                        std::vector<ByteSpan> &vendorReserved, 
+                                        std::vector<ByteSpan> &vendorReserved, 
                                         uint16_t vendorId, uint16_t profileNum,
                                         MutableByteSpan & attestationElements )
 {

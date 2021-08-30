@@ -41,8 +41,8 @@ public:
      */
     static CHIP_ERROR DeconstructAttestationElements(const ByteSpan & attestationElements, ByteSpan & certificationDeclaration,
                                           ByteSpan & attestationNonce, uint32_t & timestamp, ByteSpan & firmwareInfo,
-                     // std::vector<ByteSpan> &vendorReserved, uint16_t & vendorId, uint16_t & profileNum );
-                     uint16_t & vendorId, uint16_t & profileNum );
+                      std::vector<ByteSpan> &vendorReserved, uint16_t & vendorId, uint16_t & profileNum );
+                     // uint16_t & vendorId, uint16_t & profileNum );
                       
 
     /**
@@ -60,8 +60,8 @@ public:
 
     static CHIP_ERROR ConstructAttestationElements(const ByteSpan & certificationDeclaration, const ByteSpan & attestationNonce,
                                         uint32_t timestamp, const ByteSpan & firmwareInfo, 
-     //               std::vector<ByteSpan> &vendorReserved, uint16_t vendorId, uint16_t profileNum,
-            uint16_t vendorId, uint16_t profileNum,
+                    std::vector<ByteSpan> &vendorReserved, uint16_t vendorId, uint16_t profileNum,
+     //       uint16_t vendorId, uint16_t profileNum,
                     MutableByteSpan & attestationElements);
 };
 
