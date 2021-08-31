@@ -2368,7 +2368,7 @@ extern const char CHIP_NON_PRODUCTION_MARKER[];
  *
  */
 #ifndef CHIP_CONFIG_MDNS_CACHE_SIZE
-#define CHIP_CONFIG_MDNS_CACHE_SIZE 20
+#define CHIP_CONFIG_MDNS_CACHE_SIZE 0
 #endif
 /**
  *  @name Interaction Model object pool configuration.
