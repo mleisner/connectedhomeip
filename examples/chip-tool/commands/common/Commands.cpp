@@ -23,6 +23,11 @@
 #include <algorithm>
 #include <string>
 
+#if CONFIG_DEVICE_LAYER
+#include <platform/CHIPDeviceLayer.h>
+#endif
+
+#include <controller/CHIPDeviceControllerFactory.h>
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 
@@ -45,9 +50,68 @@ int Commands::Run(int argc, char ** argv)
     VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init Storage failure: %s", chip::ErrorStr(err)));
 
     chip::Logging::SetLogFilter(mStorage.GetLoggingLevel());
+    localId  = mStorage.GetLocalNodeId();
+    remoteId = mStorage.GetRemoteNodeId();
 
-    err = RunCommand(argc, argv);
-    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(chipTool, "Run command failure: %s", chip::ErrorStr(err)));
+    ChipLogProgress(Controller, "Read local id 0x" ChipLogFormatX64 ", remote id 0x" ChipLogFormatX64, ChipLogValueX64(localId),
+                    ChipLogValueX64(remoteId));
+
+    factoryInitParams.storageDelegate = &mStorage;
+    factoryInitParams.listenPort      = mStorage.GetListenPort();
+
+    err = InitializeCredentialsIssuer(mStorage);
+    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Operational Cred Issuer: %s", chip::ErrorStr(err)));
+
+    commissionerParams.operationalCredentialsDelegate = GetCredentialIssuer();
+
+    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Commissioner: %s", chip::ErrorStr(err)));
+
+    err = SetupDeviceAttestation();
+    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Device Attestation Setup: %s", chip::ErrorStr(err)));
+
+    VerifyOrExit(rcac.Alloc(chip::Controller::kMaxCHIPDERCertLength), err = CHIP_ERROR_NO_MEMORY);
+    VerifyOrExit(noc.Alloc(chip::Controller::kMaxCHIPDERCertLength), err = CHIP_ERROR_NO_MEMORY);
+    VerifyOrExit(icac.Alloc(chip::Controller::kMaxCHIPDERCertLength), err = CHIP_ERROR_NO_MEMORY);
+
+    {
+        chip::MutableByteSpan nocSpan(noc.Get(), chip::Controller::kMaxCHIPDERCertLength);
+        chip::MutableByteSpan icacSpan(icac.Get(), chip::Controller::kMaxCHIPDERCertLength);
+        chip::MutableByteSpan rcacSpan(rcac.Get(), chip::Controller::kMaxCHIPDERCertLength);
+
+        chip::Crypto::P256Keypair ephemeralKey;
+        SuccessOrExit(err = ephemeralKey.Initialize());
+
+        // TODO - OpCreds should only be generated for pairing command
+        //        store the credentials in persistent storage, and
+        //        generate when not available in the storage.
+        err = GenerateControllerNOCChain(localId, 0, ephemeralKey, rcacSpan, icacSpan, nocSpan);
+        SuccessOrExit(err);
+
+        commissionerParams.ephemeralKeypair = &ephemeralKey;
+        commissionerParams.controllerRCAC   = rcacSpan;
+        commissionerParams.controllerICAC   = icacSpan;
+        commissionerParams.controllerNOC    = nocSpan;
+
+        // init the factory, then setup the Controller
+        err = DeviceControllerFactory::GetInstance().Init(factoryInitParams);
+        VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Controller Factory failed to initialize"));
+        err = DeviceControllerFactory::GetInstance().SetupCommissioner(commissionerParams, mController);
+        VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Commissioner: %s", chip::ErrorStr(err)));
+    }
+
+#if CONFIG_USE_SEPARATE_EVENTLOOP
+    // ServiceEvents() calls StartEventLoopTask(), which is paired with the
+    // StopEventLoopTask() below.
+    err = DeviceControllerFactory::GetInstance().ServiceEvents();
+    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Run Loop: %s", chip::ErrorStr(err)));
+#endif // CONFIG_USE_SEPARATE_EVENTLOOP
+
+    err = RunCommand(localId, remoteId, argc, argv, &command);
+    SuccessOrExit(err);
+
+#if !CONFIG_USE_SEPARATE_EVENTLOOP
+    chip::DeviceLayer::PlatformMgr().RunEventLoop();
+#endif // !CONFIG_USE_SEPARATE_EVENTLOOP
 
 exit:
     return (err == CHIP_NO_ERROR) ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -114,7 +178,46 @@ CHIP_ERROR Commands::RunCommand(int argc, char ** argv)
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 
-    return command->Run();
+    {
+        Command::ExecutionContext execContext;
+
+        execContext.commissioner  = &mController;
+        execContext.opCredsIssuer = GetCredentialIssuer();
+        execContext.storage       = &mStorage;
+        execContext.localId       = localId;
+        execContext.remoteId      = remoteId;
+
+        command->SetExecutionContext(execContext);
+        *ranCommand = command;
+
+        //
+        // Set this to true first BEFORE we send commands to ensure we don't end
+        // up in a situation where the response comes back faster than we can
+        // set the variable to true, which will cause it to block indefinitely.
+        //
+        command->UpdateWaitForResponse(true);
+#if CONFIG_USE_SEPARATE_EVENTLOOP
+        chip::DeviceLayer::PlatformMgr().ScheduleWork(RunQueuedCommand, reinterpret_cast<intptr_t>(command));
+        command->WaitForResponse(command->GetWaitDurationInSeconds());
+#else  // CONFIG_USE_SEPARATE_EVENTLOOP
+        err = command->Run();
+        SuccessOrExit(err);
+        command->ScheduleWaitForResponse(command->GetWaitDurationInSeconds());
+#endif // CONFIG_USE_SEPARATE_EVENTLOOP
+    }
+
+exit:
+    return err;
+}
+
+void Commands::RunQueuedCommand(intptr_t commandArg)
+{
+    auto * command = reinterpret_cast<Command *>(commandArg);
+    CHIP_ERROR err = command->Run();
+    if (err != CHIP_NO_ERROR)
+    {
+        command->SetCommandExitStatus(err);
+    }
 }
 
 std::map<std::string, Commands::CommandsVector>::iterator Commands::GetCluster(std::string clusterName)
