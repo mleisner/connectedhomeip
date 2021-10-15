@@ -28,10 +28,6 @@
 #endif
 
 #include <controller/CHIPDeviceControllerFactory.h>
-#include <credentials/DeviceAttestationCredsProvider.h>
-#include <credentials/DeviceAttestationVerifier.h>
-#include <credentials/examples/DeviceAttestationCredsExample.h>
-#include <credentials/examples/DeviceAttestationVerifierExample.h>
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/ScopedBuffer.h>
@@ -80,15 +76,15 @@ int Commands::Run(int argc, char ** argv)
     factoryInitParams.storageDelegate = &mStorage;
     factoryInitParams.listenPort      = mStorage.GetListenPort();
 
-    err = mOpCredsIssuer.Initialize(mStorage);
+    err = InitializeCredentialsIssuer(mStorage);
     VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Operational Cred Issuer: %s", chip::ErrorStr(err)));
 
-    commissionerParams.operationalCredentialsDelegate = &mOpCredsIssuer;
+    commissionerParams.operationalCredentialsDelegate = GetCredentialIssuer();
 
     VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Commissioner: %s", chip::ErrorStr(err)));
 
-    chip::Credentials::SetDeviceAttestationCredentialsProvider(chip::Credentials::Examples::GetExampleDACProvider());
-    chip::Credentials::SetDeviceAttestationVerifier(chip::Credentials::Examples::GetExampleDACVerifier());
+    err = SetupDeviceAttestation();
+    VerifyOrExit(err == CHIP_NO_ERROR, ChipLogError(Controller, "Init failure! Device Attestation Setup: %s", chip::ErrorStr(err)));
 
     VerifyOrExit(rcac.Alloc(chip::Controller::kMaxCHIPDERCertLength), err = CHIP_ERROR_NO_MEMORY);
     VerifyOrExit(noc.Alloc(chip::Controller::kMaxCHIPDERCertLength), err = CHIP_ERROR_NO_MEMORY);
@@ -105,7 +101,7 @@ int Commands::Run(int argc, char ** argv)
         // TODO - OpCreds should only be generated for pairing command
         //        store the credentials in persistent storage, and
         //        generate when not available in the storage.
-        err = mOpCredsIssuer.GenerateNOCChainAfterValidation(localId, 0, ephemeralKey.Pubkey(), rcacSpan, icacSpan, nocSpan);
+        err = GenerateControllerNOCChain(localId, 0, ephemeralKey, rcacSpan, icacSpan, nocSpan);
         SuccessOrExit(err);
 
         commissionerParams.ephemeralKeypair = &ephemeralKey;
@@ -229,7 +225,7 @@ CHIP_ERROR Commands::RunCommand(NodeId localId, NodeId remoteId, int argc, char 
         Command::ExecutionContext execContext;
 
         execContext.commissioner  = &mController;
-        execContext.opCredsIssuer = &mOpCredsIssuer;
+        execContext.opCredsIssuer = GetCredentialIssuer();
         execContext.storage       = &mStorage;
         execContext.localId       = localId;
         execContext.remoteId      = remoteId;

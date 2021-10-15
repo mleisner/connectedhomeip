@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "controller/ExampleOperationalCredentialsIssuer.h"
+#include "controller/OperationalCredentialsDelegate.h"
 #include <controller/CHIPDeviceController.h>
 #include <inet/InetInterface.h>
 #include <lib/support/Span.h>
@@ -100,7 +100,7 @@ public:
     struct ExecutionContext
     {
         ChipDeviceCommissioner * commissioner;
-        chip::Controller::ExampleOperationalCredentialsIssuer * opCredsIssuer;
+        chip::Controller::OperationalCredentialsDelegate * opCredsIssuer;
         PersistentStorage * storage;
         chip::NodeId localId;
         chip::NodeId remoteId;
