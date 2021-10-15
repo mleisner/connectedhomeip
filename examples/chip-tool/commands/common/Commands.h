@@ -20,16 +20,21 @@
 
 #include "../../config/PersistentStorage.h"
 #include "Command.h"
-#include <controller/ExampleOperationalCredentialsIssuer.h>
+#include <controller/OperationalCredentialsDelegate.h>
+#include <crypto/CHIPCryptoPAL.h>
 #include <map>
 
 class Commands
 {
 public:
+    using NodeId         = ::chip::NodeId;
+    using FabricId       = ::chip::FabricId;
     using CommandsVector = ::std::vector<std::unique_ptr<Command>>;
 
     void Register(const char * clusterName, commands_list commandsList);
     int Run(int argc, char ** argv);
+
+    virtual ~Commands() {}
 
 private:
     CHIP_ERROR RunCommand(int argc, char ** argv);
@@ -43,6 +48,14 @@ private:
     void ShowClusterAttributes(std::string executable, std::string clusterName, std::string commandName, CommandsVector & commands);
     void ShowCommand(std::string executable, std::string clusterName, Command * command);
 
+    virtual CHIP_ERROR InitializeCredentialsIssuer(chip::PersistentStorageDelegate & storage) = 0;
+    virtual CHIP_ERROR SetupDeviceAttestation()                                               = 0;
+    virtual chip::Controller::OperationalCredentialsDelegate * GetCredentialIssuer()          = 0;
+    virtual CHIP_ERROR GenerateControllerNOCChain(NodeId nodeId, FabricId fabricId, chip::Crypto::P256Keypair & keypair,
+                                                  chip::MutableByteSpan & rcac, chip::MutableByteSpan & icac,
+                                                  chip::MutableByteSpan & noc)                = 0;
+
     std::map<std::string, CommandsVector> mClusters;
+    chip::Controller::DeviceCommissioner mController;
     PersistentStorage mStorage;
 };

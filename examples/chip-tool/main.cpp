@@ -16,7 +16,7 @@
  *
  */
 
-#include "commands/common/Commands.h"
+#include "commands/example/ExampleCredentialIssuerCommands.h"
 
 #include "commands/discover/Commands.h"
 #include "commands/pairing/Commands.h"
@@ -31,7 +31,7 @@
 // ================================================================================
 int main(int argc, char * argv[])
 {
-    Commands commands;
+    ExampleCredentialIssuerCommands commands;
     registerCommandsDiscover(commands);
     registerCommandsPayload(commands);
     registerCommandsPairing(commands);

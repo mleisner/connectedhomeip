@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "controller/ExampleOperationalCredentialsIssuer.h"
+#include "controller/OperationalCredentialsDelegate.h"
 #include <controller/CHIPDeviceController.h>
 #include <inet/InetInterface.h>
 #include <lib/support/Span.h>
@@ -81,6 +81,20 @@ public:
     {
         ::chip::Inet::IPAddress address;
         ::chip::Inet::InterfaceId interfaceId;
+    };
+
+    /**
+     * @brief
+     *   Encapsulates key objects in the CHIP stack that need continued
+     *   access, so wrapping it in here makes it nice and compactly encapsulated.
+     */
+    struct ExecutionContext
+    {
+        ChipDeviceCommissioner * commissioner;
+        chip::Controller::OperationalCredentialsDelegate * opCredsIssuer;
+        PersistentStorage * storage;
+        chip::NodeId localId;
+        chip::NodeId remoteId;
     };
 
     Command(const char * commandName) : mName(commandName) {}

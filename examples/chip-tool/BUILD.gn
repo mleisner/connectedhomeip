@@ -29,7 +29,19 @@ declare_args() {
   config_pair_with_random_id = true
 }
 
-executable("chip-tool") {
+config("config") {
+  include_dirs = [
+    ".",
+    "${chip_root}/zzz_generated/chip-tool",
+  ]
+
+  defines = [
+    "CONFIG_USE_SEPARATE_EVENTLOOP=${config_use_separate_eventloop}",
+    "CONFIG_PAIR_WITH_RANDOM_ID=${config_pair_with_random_id}",
+  ]
+}
+
+static_library("chip-tool-utils") {
   sources = [
     "commands/clusters/ModelCommand.cpp",
     "commands/common/CHIPCommand.cpp",
@@ -45,12 +57,6 @@ executable("chip-tool") {
     "commands/reporting/ReportingCommand.cpp",
     "commands/tests/TestCommand.cpp",
     "config/PersistentStorage.cpp",
-    "main.cpp",
-  ]
-
-  defines = [
-    "CONFIG_USE_SEPARATE_EVENTLOOP=${config_use_separate_eventloop}",
-    "CONFIG_PAIR_WITH_RANDOM_ID=${config_pair_with_random_id}",
   ]
 
   deps = [
@@ -62,10 +68,27 @@ executable("chip-tool") {
 
   cflags = [ "-Wconversion" ]
 
-  include_dirs = [
-    ".",
-    "${chip_root}/zzz_generated/chip-tool",
+  public_configs = [ ":config" ]
+
+  output_dir = root_out_dir
+}
+
+executable("chip-tool") {
+  sources = [
+    "main.cpp",
   ]
+
+  deps = [
+    ":chip-tool-utils",
+    "${chip_root}/src/controller/data_model",
+    "${chip_root}/src/lib",
+    "${chip_root}/src/platform",
+    "${chip_root}/third_party/inipp",
+  ]
+
+  cflags = [ "-Wconversion" ]
+
+  public_configs = [ ":config" ]
 
   output_dir = root_out_dir
 }
